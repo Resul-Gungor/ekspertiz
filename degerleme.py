@@ -1,52 +1,42 @@
-class ArabaDegerlemeMotoru:
-    def __init__(self, veri_seti):
-        self.veri_seti = veri_seti
+import json
+import os
 
-    def dinamik_katsayi_belirle(self, arac_yasi):
-        """Senin istediğin ağırlık mevzusunu çözen fonksiyon"""
-        if arac_yasi <= 3:
-            return {"boya": 0.08, "degisen": 0.12, "km": 0.05}
-        elif arac_yasi <= 10:
-            return {"boya": 0.03, "degisen": 0.06, "km": 0.08}
+class AutoWeightEngine:
+    def __init__(self, dosya_yolu):
+        self.veri_seti = self.veriyi_yukle(dosya_yolu)
+
+    def veriyi_yukle(self, yol):
+        if os.path.exists(yol):
+            with open(yol, 'r', encoding='utf-8') as f:
+                return json.load(f)
         else:
-            return {"boya": 0.01, "degisen": 0.02, "km": 0.10}
+            return []
 
-    def tahmin_et(self, girilen_arac):
-        current_year = 2026
-        yas = current_year - girilen_arac['yil']
-        
-        benzerler = [a for a in self.veri_seti if a['yil'] == girilen_arac['yil']]
-        if not benzerler:
-            return "Yeterli veri yok"
-            
-        baz_fiyat = sum(a['fiyat'] for a in benzerler) / len(benzerler)
-        
-        katsayilar = self.dinamik_katsayi_belirle(yas)
-        
-        boya_indirimi = baz_fiyat * (girilen_arac['boyali_parca'] * katsayilar['boya'])
-        degisen_indirimi = baz_fiyat * (girilen_arac['degisen_parca'] * katsayilar['degisen'])
-        
-        piyasa_ort_km = sum(a['km'] for a in benzerler) / len(benzerler)
-        km_farki_oranı = (girilen_arac['km'] - piyasa_ort_km) / piyasa_ort_km
-        km_etkisi = baz_fiyat * (km_farki_oranı * katsayilar['km'])
+    def katsayi_hesapla(self, yas):
+        if yas <= 3: 
+            return {"boya": 0.07, "degisen": 0.10, "km": 0.04}
+        if yas <= 8: 
+            return {"boya": 0.04, "degisen": 0.07, "km": 0.06}
+        return {"boya": 0.015, "degisen": 0.03, "km": 0.09}
 
-        tahmini_fiyat = baz_fiyat - boya_indirimi - degisen_indirimi - km_etkisi
+    def fiyat_tahmin(self, yil, km, boya, degisen):
+        arac_yasi = 2026 - yil
+        benzer_araclar = [a for a in self.veri_seti if a['yil'] == yil]
         
-        return {
-            "Baz Piyasa Fiyatı": round(baz_fiyat, 2),
-            "Tahmini Değer": round(tahmini_fiyat, 2),
-            "Uygulanan Katsayılar": katsayilar
-        }
+        if not benzer_araclar:
+            return None
 
-piyasa_verisi = [
-    {"yil": 2024, "fiyat": 1000000, "km": 10000},
-    {"yil": 2024, "fiyat": 980000, "km": 15000},
-    {"yil": 2015, "fiyat": 600000, "km": 150000},
-    {"yil": 2015, "fiyat": 580000, "km": 170000}
-]
+        ort_fiyat = sum(a['fiyat'] for a in benzer_araclar) / len(benzer_araclar)
+        w = self.katsayi_hesapla(arac_yasi)
+        
+        fiyat_etkisi = (boya * w['boya']) + (degisen * w['degisen'])
+        tahmini_deger = ort_fiyat * (1 - fiyat_etkisi)
+        
+        km_etkisi = (km / 10000) * 0.01 
+        tahmini_deger = tahmini_deger * (1 - (km_etkisi * w['km']))
 
-motor = ArabaDegerlemeMotoru(piyasa_verisi)
+        return round(tahmini_deger, 2)
 
-benim_arabam = {"yil": 2024, "km": 12000, "boyali_parca": 1, "degisen_parca": 0}
-sonuc = motor.tahmin_et(benim_arabam)
-print(f"2024 Araç Tahmini: {sonuc}")
+engine = AutoWeightEngine('veri_setim.json')
+sonuc = engine.fiyat_tahmin(2024, 10000, 1, 0)
+print(sonuc)
