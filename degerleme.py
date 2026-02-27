@@ -4,6 +4,16 @@ import os
 class AutoWeightEngine:
     def __init__(self, dosya_yolu):
         self.veri_seti = self.veriyi_yukle(dosya_yolu)
+        self.Parca_Katsayilari = {
+            "tavan": 1.0,
+            "sase": 1.0,
+            "direk": 0.9,
+            "kaput": 0.8,
+            "bagaj": 0.5,
+            "kapi": 0.4,
+            "camurluk": 0.3,
+            "tampon": 0.2,
+        }
 
     def veriyi_yukle(self, yol):
         if os.path.exists(yol):
@@ -14,12 +24,20 @@ class AutoWeightEngine:
 
     def katsayi_hesapla(self, yas):
         if yas <= 3: 
-            return {"boya": 0.07, "degisen": 0.10, "km": 0.04}
+            return {"temel_hasar": 0.10, "km": 0.04}
         if yas <= 8: 
-            return {"boya": 0.04, "degisen": 0.07, "km": 0.06}
-        return {"boya": 0.015, "degisen": 0.03, "km": 0.09}
+            return {"temel_hasar": 0.06, "km": 0.06}
+        return {"temel_hasar": 0.02, "km": 0.09}
 
-    def fiyat_tahmin(self, yil, km, boya, degisen):
+    def fiyat_etkisi_hesapla(self, boyananlar, degisenler):
+        skor=0
+        for parca in boyananlar:
+            skor += self.Parca_Katsayilari.get(parca, 0) * 1.0
+        for parca in degisenler:
+            skor += self.Parca_Katsayilari.get(parca, 0) * 1.8
+        return skor
+
+    def fiyat_tahmin(self, yil, km, boyananlar, degisenler):
         arac_yasi = 2026 - yil
         benzer_araclar = [a for a in self.veri_seti if a['yil'] == yil]
         
@@ -29,14 +47,19 @@ class AutoWeightEngine:
         ort_fiyat = sum(a['fiyat'] for a in benzer_araclar) / len(benzer_araclar)
         w = self.katsayi_hesapla(arac_yasi)
         
-        fiyat_etkisi = (boya * w['boya']) + (degisen * w['degisen'])
-        tahmini_deger = ort_fiyat * (1 - fiyat_etkisi)
-        
-        km_etkisi = (km / 10000) * 0.01 
-        tahmini_deger = tahmini_deger * (1 - (km_etkisi * w['km']))
+        hasar_skoru = self.fiyat_etkisi_hesapla(boyananlar, degisenler)
+        hasar_etkisi = hasar_skoru * w['temel_hasar']
+        km_etkisi = (km/10000)* 0.01 * w['km']
+
+        tahmini_deger = ort_fiyat * (1 - hasar_etkisi - km_etkisi)
 
         return round(tahmini_deger, 2)
 
 engine = AutoWeightEngine('veri_setim.json')
-sonuc = engine.fiyat_tahmin(2024, 10000, 1, 0)
-print(sonuc)
+
+# ÖRNEK SORGULAR
+# 2024 Model, Tavan Boyalı (Çok düşmeli)
+print("Senaryo 1 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, ["tavan"], []))
+
+# 2024 Model, Tampon Boyalı (Az düşmeli)
+print("Senaryo 2 (Tampon Boyalı):", engine.fiyat_tahmin(2024, 10000, ["tampon"], []))

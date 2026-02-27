@@ -1,8 +1,50 @@
 [
-  { "id": 1, "marka": "Fiat", "model": "Egea", "yil": 2024, "km": 5000, "boyali_parca": 0, "degisen_parca": 0, "fiyat": 1100000 },
-  { "id": 2, "marka": "Fiat", "model": "Egea", "yil": 2024, "km": 12000, "boyali_parca": 2, "degisen_parca": 0, "fiyat": 1020000 },
-  { "id": 3, "marka": "Fiat", "model": "Egea", "yil": 2023, "km": 25000, "boyali_parca": 0, "degisen_parca": 1, "fiyat": 950000 },
-  { "id": 4, "marka": "Fiat", "model": "Egea", "yil": 2021, "km": 45000, "boyali_parca": 1, "degisen_parca": 0, "fiyat": 880000 },
-  { "id": 5, "marka": "Fiat", "model": "Egea", "yil": 2018, "km": 110000, "boyali_parca": 3, "degisen_parca": 0, "fiyat": 720000 },
-  { "id": 6, "marka": "Fiat", "model": "Egea", "yil": 2016, "km": 185000, "boyali_parca": 5, "degisen_parca": 2, "fiyat": 610000 }
+  {
+    "id": 1,
+    "yil": 2024,
+    "km": 5000,
+    "boyananlar": [],
+    "degisenler": [],
+    "fiyat": 1150000
+  },
+  {
+    "id": 2,
+    "yil": 2024,
+    "km": 15000,
+    "boyananlar": ["tavan"],
+    "degisenler": [],
+    "fiyat": 980000
+  },
+  {
+    "id": 3,
+    "yil": 2024,
+    "km": 12000,
+    "boyananlar": ["camurluk", "tampon"],
+    "degisenler": [],
+    "fiyat": 1120000
+  },
+  {
+    "id": 4,
+    "yil": 2021,
+    "km": 45000,
+    "boyananlar": ["kapi"],
+    "degisenler": ["camurluk"],
+    "fiyat": 890000
+  },
+  {
+    "id": 5,
+    "yil": 2018,
+    "km": 120000,
+    "boyananlar": ["kaput", "camurluk", "kapi"],
+    "degisenler": [],
+    "fiyat": 750000
+  },
+  {
+    "id": 6,
+    "yil": 2015,
+    "km": 180000,
+    "boyananlar": ["tavan", "kaput", "bagaj"],
+    "degisenler": ["sase"],
+    "fiyat": 580000
+  }
 ]
