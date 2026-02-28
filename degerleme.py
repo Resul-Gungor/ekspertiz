@@ -51,7 +51,7 @@ class AutoWeightEngine:
         hasar_etkisi = hasar_skoru * w['temel_hasar']
         km_etkisi = (km/10000)* 0.01 * w['km']
 
-        tahmini_deger = ort_fiyat * (1 - hasar_etkisi - km_etkisi)
+        tahmini_deger = ort_fiyat * (1 - hasar_etkisi) * (1 - km_etkisi)
 
         return round(tahmini_deger, 2)
 
