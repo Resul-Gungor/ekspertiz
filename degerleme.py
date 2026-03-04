@@ -29,15 +29,17 @@ class AutoWeightEngine:
             return {"temel_hasar": 0.06, "km": 0.06}
         return {"temel_hasar": 0.02, "km": 0.09}
 
-    def fiyat_etkisi_hesapla(self, boyananlar, degisenler):
+    def fiyat_etkisi_hesapla(self, lokal_boyananlar, boyananlar, degisenler):
         skor=0
+        for parca in lokal_boyananlar:
+            skor += self.Parca_Katsayilari.get(parca, 0) * 0.5
         for parca in boyananlar:
             skor += self.Parca_Katsayilari.get(parca, 0) * 1.0
         for parca in degisenler:
             skor += self.Parca_Katsayilari.get(parca, 0) * 1.8
         return skor
 
-    def fiyat_tahmin(self, yil, km, boyananlar, degisenler):
+    def fiyat_tahmin(self, yil, km, lokal_boyananlar, boyananlar, degisenler, agir_hasari,):
         arac_yasi = 2026 - yil
         benzer_araclar = [a for a in self.veri_seti if a['yil'] == yil]
         
@@ -47,9 +49,11 @@ class AutoWeightEngine:
         ort_fiyat = sum(a['fiyat'] for a in benzer_araclar) / len(benzer_araclar)
         w = self.katsayi_hesapla(arac_yasi)
         
-        hasar_skoru = self.fiyat_etkisi_hesapla(boyananlar, degisenler)
+        hasar_skoru = self.fiyat_etkisi_hesapla(lokal_boyananlar, boyananlar, degisenler)
         hasar_etkisi = hasar_skoru * w['temel_hasar']
         km_etkisi = (km/10000)* 0.01 * w['km']
+        if  agir_hasari:
+            hasar_etkisi += 0.15
 
         tahmini_deger = ort_fiyat * (1 - hasar_etkisi) * (1 - km_etkisi)
 
@@ -58,8 +62,11 @@ class AutoWeightEngine:
 engine = AutoWeightEngine('veri_setim.json')
 
 # ÖRNEK SORGULAR
-# 2024 Model, Tavan Boyalı (Çok düşmeli)
-print("Senaryo 1 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, ["tavan"], []))
-
-# 2024 Model, Tampon Boyalı (Az düşmeli)
-print("Senaryo 2 (Tampon Boyalı):", engine.fiyat_tahmin(2024, 10000, ["tampon"], []))
+print("Senaryo 1 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, [], [], [], False))
+print("Senaryo 1 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, [], [], [], True))
+print("Senaryo 1 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, ["kaput", "camurluk"], ["tavan"], ["kaput"], False))
+print("Senaryo 2 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, [],["tavan"], [], False))
+print("Senaryo 3 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, [],["tavan"], ["kaput"], False))
+print("Senaryo 4 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, ["kaput"], ["tavan"], [], False))
+print("Senaryo 4 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, ["bagaj"], ["tavan"], [], False))
+print("Senaryo 4 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, [], ["tavan"], ["kaput"], False))
