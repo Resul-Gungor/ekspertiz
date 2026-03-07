@@ -1,72 +1,36 @@
-import json
+import pandas as pd
+import xgboost as xgb
 import os
 
-class AutoWeightEngine:
-    def __init__(self, dosya_yolu):
-        self.veri_seti = self.veriyi_yukle(dosya_yolu)
-        self.Parca_Katsayilari = {
-            "tavan": 1.0,
-            "sase": 1.0,
-            "direk": 0.9,
-            "kaput": 0.8,
-            "bagaj": 0.5,
-            "kapi": 0.4,
-            "camurluk": 0.3,
-            "tampon": 0.2,
-        }
+dosya_yolu = 'veri_seti.csv'
 
-    def veriyi_yukle(self, yol):
-        if os.path.exists(yol):
-            with open(yol, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        else:
-            return []
+if not os.path.exists(dosya_yolu):
+    print("Hata: veri_seti.csv dosyasi bulunamadi.")
+    exit()
 
-    def katsayi_hesapla(self, yas):
-        if yas <= 3: 
-            return {"temel_hasar": 0.10, "km": 0.04}
-        if yas <= 8: 
-            return {"temel_hasar": 0.06, "km": 0.06}
-        return {"temel_hasar": 0.02, "km": 0.09}
+df = pd.read_csv(dosya_yolu)
+df = df.dropna(subset=['Fiyat', 'Yil', 'Km'])
 
-    def fiyat_etkisi_hesapla(self, lokal_boyananlar, boyananlar, degisenler):
-        skor=0
-        for parca in lokal_boyananlar:
-            skor += self.Parca_Katsayilari.get(parca, 0) * 0.5
-        for parca in boyananlar:
-            skor += self.Parca_Katsayilari.get(parca, 0) * 1.0
-        for parca in degisenler:
-            skor += self.Parca_Katsayilari.get(parca, 0) * 1.8
-        return skor
+df_encoded = pd.get_dummies(df, columns=['Marka', 'Model'])
 
-    def fiyat_tahmin(self, yil, km, lokal_boyananlar, boyananlar, degisenler, agir_hasari,):
-        arac_yasi = 2026 - yil
-        benzer_araclar = [a for a in self.veri_seti if a['yil'] == yil]
-        
-        if not benzer_araclar:
-            return None
+X = df_encoded.drop('Fiyat', axis=1)
+y = df_encoded['Fiyat']
 
-        ort_fiyat = sum(a['fiyat'] for a in benzer_araclar) / len(benzer_araclar)
-        w = self.katsayi_hesapla(arac_yasi)
-        
-        hasar_skoru = self.fiyat_etkisi_hesapla(lokal_boyananlar, boyananlar, degisenler)
-        hasar_etkisi = hasar_skoru * w['temel_hasar']
-        km_etkisi = (km/10000)* 0.01 * w['km']
-        if  agir_hasari:
-            hasar_etkisi += 0.15
+model = xgb.XGBRegressor(random_state=42) #
+model.fit(X, y)
 
-        tahmini_deger = ort_fiyat * (1 - hasar_etkisi) * (1 - km_etkisi)
+kullanici_araci = pd.DataFrame({
+    'Yil': [2020],
+    'Km': [55000],
+    'Kaput_Boyali': [1],
+    'Agir_Hasar': [0],
+    'Marka_BMW': [0],
+    'Marka_Fiat': [1],
+    'Model_3 Serisi': [0],
+    'Model_Egea': [1]
+})
 
-        return round(tahmini_deger, 2)
+kullanici_araci = kullanici_araci.reindex(columns=X.columns, fill_value=0)
+tahmini_fiyat = model.predict(kullanici_araci)[0]
 
-engine = AutoWeightEngine('veri_setim.json')
-
-# ÖRNEK SORGULAR
-print("Senaryo 1 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, [], [], [], False))
-print("Senaryo 1 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, [], [], [], True))
-print("Senaryo 1 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, ["kaput", "camurluk"], ["tavan"], ["kaput"], False))
-print("Senaryo 2 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, [],["tavan"], [], False))
-print("Senaryo 3 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, [],["tavan"], ["kaput"], False))
-print("Senaryo 4 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, ["kaput"], ["tavan"], [], False))
-print("Senaryo 4 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, ["bagaj"], ["tavan"], [], False))
-print("Senaryo 4 (Tavan Boyalı):", engine.fiyat_tahmin(2024, 10000, [], ["tavan"], ["kaput"], False))
+print(f"Tahmini Piyasa Fiyati: {tahmini_fiyat:,.2f} TL")
